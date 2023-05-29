@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            background-image: url(images/Background.png);
+            background-repeat: no-repeat;
+            background-size: 100% 100%; /* Updated to stretch to full width and height */
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+            margin: 0; /* Added to remove default body margin */
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            align-items: center;
+
+        }
+
+        
+        #title-container{
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 50px;
+            font-size: 5rem;
+            font-family: 'Orbitron';
+        }
+
+        #content-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #picker {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            margin-right: 20px;
+        }
+
+        #right-container {
+            display: flex;
+            flex-direction: column;
+            margin-left: 50px;
+        }
+
+        #rgb-container {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        #red-container,
+        #green-container,
+        #blue-container {
+            text-align: center;
+            width: 33%;
+        }
+
+        #red,
+        #green,
+        #blue {
+            width: 40px;
+            text-align: center;
+            border: 0px;
+            background-image: url(images/RGBblock.png);
+            background-size: 100% 100%;
+            
+        }
+
+        #message,
+        #code {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-image: url(images/TextBox.png);
+            background-size: 100% 100%;
+            width: 350px;
+            height: 50px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            flex-direction: column;
+            text-align: center;
+            font-weight: bolder;
+        }
+
+        #code p {
+            filter: blur(4px);
+        }
+
+        label, input, #message, #code {
+            color: rgb(100, 100, 100);
+            -webkit-text-stroke: 0.3px black;
+            -moz-text-stroke: 0.3px black;
+            -ms-text-stroke: 0.3px black;
+            -o-text-stroke: 0.3px black;
+            
+        }
+
+        #title-container {
+            color: rgb(100, 100, 100);
+            -webkit-text-stroke: 1.5px black;
+            -moz-text-stroke: 1.5px black;
+            -ms-text-stroke: 1.5px black;
+            -o-text-stroke: 1.5px black;
+            
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    <title>Opto-filter</title>
+</head>
+<body>
+    <div id="left-bod" style="width: 60%">
+        <div id="title-container">Opto-filter</div>
+        <div id="content-container">
+            <div id="picker"></div>
+            <div id="right-container">
+                <div id="rgb-container">
+                    <div id="red-container">
+                        <label for="red" style="font-family: 'Orbitron', sans-serif; font-size: 1.3rem; font-weight: bold;">R</label>
+                        <br>
+                        <input type="text" id="red" readonly style="font-family: 'Orbitron', sans-serif; font-size: 1rem;">
+                    </div>
+                    <div id="green-container">
+                        <label for="green" style="font-family: 'Orbitron', sans-serif; font-size: 1.3rem; font-weight: bold;">G</label>
+                        <br>
+                        <input type="text" id="green" readonly style="font-family: 'Orbitron', sans-serif; font-size: 1rem;">
+                    </div>
+                    <div id="blue-container">
+                        <label for="blue" style="font-family: 'Orbitron', sans-serif; font-size: 1.3rem; font-weight: bold;">B</label>
+                        <br>
+                        <input type="text" id="blue" readonly style="font-family: 'Orbitron', sans-serif; font-size: 1rem;">
+                    </div>
+                </div>
+                <div id="message">Odaberi boju za kalibraciju filtera.</div>
+                <div id="code">
+                    <p>X Y Z A B C L K</p>
+                </div>
+            </div>
+        </div></div>
+    <div id="right-bod"></div>
+    
+
+    <script>
+        var xSecret = " 1"
+        var ySecret = " 2"
+        var zSecret = " 3"
+
+        var rSecret = 255
+        var gSecret = 255
+        var bSecret = 255
+
+        var failMessage = "Neuspjela kalibracija.<br>Probaj opet.";
+
+        var completed = false;
+        var timerId;
+        var colorPicker = new iro.ColorPicker('#picker', {
+            width: 400,
+            layout: [
+                {
+                    component: iro.ui.Wheel,
+                }
+            ]
+        });
+
+        colorPicker.on('color:change', function(color) {
+            var redValue = color.rgb.r;
+            var greenValue = color.rgb.g;
+            var blueValue = color.rgb.b;
+
+            document.getElementById('red').value = redValue;
+            document.getElementById('green').value = greenValue;
+            document.getElementById('blue').value = blueValue;
+
+            clearTimeout(timerId); // Reset the timer on each color change
+
+            if (completed) {
+                document.getElementById('message').textContent = "Opto-filter kalibriran!";
+                return;
+            }
+
+            document.getElementById('message').textContent = "Kalibracija u tijeku.";
+            timerId = setTimeout(function() {
+                if (redValue === rSecret && greenValue === gSecret && blueValue === bSecret) {
+                    completed = true;
+                    document.getElementById('message').textContent = "Opto-filter kalibriran!";
+                    document.getElementById('code').textContent = "Kod za lokot na ormaru: "+xSecret+ySecret+zSecret;
+                    document.getElementById('code').style = "filter: none";
+                } else {
+                    document.getElementById('message').innerHTML = failMessage;
+                }     
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
